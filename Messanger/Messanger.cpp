@@ -9,21 +9,22 @@
 #define IDM_CONNECT_SIGNAL   1002
 #define IDM_HELP            1003
 
+// Global Variables:
+HINSTANCE hInst; // current instance
+HWND hWnd; // Main window handle
+WCHAR szTitle[MAX_LOADSTRING]; // Title bar text
+WCHAR szWindowClass[MAX_LOADSTRING];
 
-// Globale Variablen:
-HINSTANCE hInst;                                // Aktuelle Instanz
-WCHAR szTitle[MAX_LOADSTRING];                  // Titelleistentext
-WCHAR szWindowClass[MAX_LOADSTRING];            // Der Klassenname des Hauptfensters.
-
-// Vorwärtsdeklarationen der in diesem Codemodul enthaltenen Funktionen:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-int windowWidth = 1211; // Hier setzen Sie die gewünschte Breite
-int windowHeight = 940; // Hier setzen Sie die gewünschte Höhe
-
+int windowWidth = 1211; // Desired width
+int windowHeight = 940; // Desired height
+const int sidebarWidth = 200;
+const int sidebarHeight = windowHeight;
+HWND hSidebar; // Handle for the sidebar window
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -33,22 +34,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // Globale Zeichenfolgen initialisieren
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_MESSANGER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-    // Anwendungsinitialisierung ausführen:
     if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
     }
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MESSANGER));
+    hSidebar = CreateWindow(L"STATIC", NULL, WS_CHILD | WS_VISIBLE | SS_LEFT,
+        0, 0, sidebarWidth, sidebarHeight,
+        hWnd, (HMENU)IDC_STATIC, hInstance, NULL);
 
+    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MESSANGER));
     MSG msg;
 
-    // Hauptnachrichtenschleife:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
@@ -64,9 +65,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
-
     wcex.cbSize = sizeof(WNDCLASSEX);
-
     wcex.style = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc = WndProc;
     wcex.cbClsExtra = 0;
@@ -78,18 +77,14 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MESSANGER);
     wcex.lpszClassName = szWindowClass;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
     return RegisterClassExW(&wcex);
 }
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-    hInst = hInstance; // Instanzenhandle in der globalen Variablen speichern
-
-
-    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+    hInst = hInstance;
+    hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0, windowWidth, windowHeight, nullptr, nullptr, hInstance, nullptr);
-
 
     if (!hWnd)
     {
@@ -106,10 +101,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_SIZE:
+    {
+        SetWindowPos(hSidebar, 0, 0, 0, sidebarWidth, HIWORD(lParam), SWP_NOZORDER);
+        break;
+    }
     case WM_COMMAND:
     {
         int wmId = LOWORD(wParam);
-        // Menüauswahl analysieren:
         switch (wmId)
         {
         case IDM_ABOUT:
@@ -119,30 +118,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             DestroyWindow(hWnd);
             break;
         case IDM_CONNECT_WHATSAPP:
-            // Hier fügen Sie den Code hinzu, um WhatsApp zu verbinden
             MessageBox(hWnd, L"Verbinde mit WhatsApp...", L"Verbindung zu WhatsApp", MB_OK);
             break;
         case IDM_CONNECT_SIGNAL:
-            // Hier fügen Sie den Code hinzu, um Signal zu verbinden
             MessageBox(hWnd, L"Verbinde mit Signal...", L"Verbindung zu Signal", MB_OK);
             break;
         case IDM_HELP:
-            // Hier fügen Sie den Code hinzu, um Hilfe anzuzeigen
             MessageBox(hWnd, L"Dies ist die Hilfe!", L"Hilfe", MB_OK);
             break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
+        break;
     }
-    break;
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-        // TODO: Zeichencode, der hdc verwendet, hier einfügen...
         EndPaint(hWnd, &ps);
+        break;
     }
-    break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
